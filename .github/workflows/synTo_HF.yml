@@ -25,4 +25,4 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           echo "Pushing to Hugging Face..."
-          git push --force https://WHITETITAN:$HF_TOKEN@huggingface.co/spaces/WHITETITAN/multiAgent-pipeline $GITHUB_REF_NAME
+          git push --force https://WHITETITAN:$HF_TOKEN@huggingface.co/spaces/WHITETITAN/multiAgent-pipeline Master:main
