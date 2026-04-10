@@ -52,6 +52,3 @@ async def upload_markdown(file: UploadFile = File(...)):
             "status": "error",
             "message": str(e)
         }
-
-# Instead of single uvicorn process
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "4"]
