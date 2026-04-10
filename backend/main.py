@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -15,9 +15,43 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    print("hello world")
-    return {"message": "hello world"}
+    return {"message": "Markdown to PPTX Converter API"}
 
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.post("/upload")
+async def upload_markdown(file: UploadFile = File(...)):
+    """
+    Receive a markdown file and prepare it for PPTX conversion
+    """
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Decode content
+        markdown_text = content.decode('utf-8')
+        
+        print(f"Received file: {file.filename}")
+        print(f"File size: {len(markdown_text)} characters")
+        print(f"Content preview: {markdown_text[:200]}...")
+        
+        # For now, just acknowledge receipt
+        # TODO: Add markdown parsing and PPTX generation logic here
+        return {
+            "status": "success",
+            "message": f"File {file.filename} received successfully",
+            "filename": file.filename,
+            "size": len(markdown_text)
+        }
+    
+    except Exception as e:
+        print(f"Error uploading file: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+# Instead of single uvicorn process
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "4"]
