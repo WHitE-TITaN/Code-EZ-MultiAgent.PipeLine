@@ -1,3 +1,14 @@
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
+python-dotenv==1.0.0
 python-multipart
+
+jason
+markdown2
+
+google
+google.genai
+
+python-dotenv
+
+time
