@@ -285,16 +285,7 @@ These examples are useful for:
   - frontend deployment separately
   - or a unified deployment strategy that serves both frontend and backend together
 
-## Suggested Next Improvements
-
-- Add a configurable frontend API base URL through environment variables.
-- Persist jobs and output metadata in a database or cache.
-- Move file generation to a managed storage layer.
-- Add automated API tests and end-to-end UI tests.
-- Add retry and observability around Gemini requests.
-- Fix multi-worker job-status consistency by using shared state.
-- Package the frontend and backend into a clearer production deployment model.
 
 ## License
 
-This project appears to be a hackathon/prototype codebase. Add an explicit license if you plan to share or reuse it publicly.
+This project appears to be a hackathon/prototype codebase.
