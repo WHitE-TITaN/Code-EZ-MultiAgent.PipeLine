@@ -1,16 +1,14 @@
 import json
 import os
-import time # NEEDED FOR SLEEP
+import time
 from typing import List
-
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
 load_dotenv()
 
-# --- FIXED LIMITS FOR FREE TIER ---
-CHUNK_CHAR_LIMIT = 600000 # 600k chars = ~4 chunks for your 2.3M file
+CHUNK_CHAR_LIMIT = 300000 
 CHUNK_OVERLAP = 5000
 INTERMEDIATE_SLIDES_PER_CHUNK = 8
 FINAL_SLIDE_LIMIT = 15
@@ -57,7 +55,6 @@ def _split_markdown_into_chunks(markdown_text: str) -> List[str]:
     return chunks
 
 def _generate_json_response(client: genai.Client, prompt: str) -> str:
-    # Added basic retry logic inside the generation call
     for attempt in range(3):
         try:
             response = client.models.generate_content(
@@ -71,14 +68,15 @@ def _generate_json_response(client: genai.Client, prompt: str) -> str:
             return response.text
         except Exception as e:
             if attempt < 2:
-                time.sleep(15) # Wait if minor overload
+                time.sleep(15) 
             else:
                 raise ValueError(f"Gemini API Error after 3 tries: {str(e)}")
 
 def _summarize_chunk(client: genai.Client, chunk_text: str, chunk_index: int, total_chunks: int) -> List[dict]:
     prompt = f"""You are analyzing chunk {chunk_index} of {total_chunks} from a very large markdown document.
-Extract the most presentation-worthy insights from this chunk only. Focus on main points and hard data.
-Return ONLY a valid JSON array. Each array item must be an object with "title" and "bullets" (array of strings, max 25 words).
+Extract the most presentation-worthy insights.
+Return ONLY a valid JSON array. Each object must have "title", "bullets" (array of strings, min 40 & max 50 words).
+CRITICAL: If the text mentions a [CHART: Topic], [VISUALIZATION: Topic], or an image ![Topic](...), you MUST include an "existing_chart" object like this: {{"has_existing_chart": true, "chart_topic_reference": "Topic"}}.
 Limit to {INTERMEDIATE_SLIDES_PER_CHUNK} slide objects.
 Markdown chunk:
 {chunk_text}"""
@@ -89,14 +87,14 @@ def _merge_chunk_summaries(client: genai.Client, chunk_summaries: List[List[dict
     serialized_summaries = json.dumps(chunk_summaries, ensure_ascii=True)
     prompt = f"""You are an expert presentation designer.
 Deduplicate and merge these slide candidates into a final presentation outline.
-Return ONLY a valid JSON array of objects with "title" and "bullets" (array of strings).
+Return ONLY a valid JSON array of objects with "title", "bullets" (array of strings).
+CRITICAL: Preserve the "existing_chart" data if it exists in the candidates!
 Maximum {FINAL_SLIDE_LIMIT} slides. Order from high-level to specific.
 Chunk slide candidates:
 {serialized_summaries}"""
     merged_response = _generate_json_response(client, prompt)
     return json.loads(merged_response)
 
-# --- ADDED CALLBACK PARAMETER ---
 def generate_slide_content(markdown_text: str, progress_callback=None) -> str:
     client = _get_client()
     
@@ -110,13 +108,11 @@ def generate_slide_content(markdown_text: str, progress_callback=None) -> str:
     
     for index, chunk_text in enumerate(chunks, start=1):
         if progress_callback: 
-            # Calculate dynamic progress percentage
             base_progress = 10 + ((index - 1) / total_chunks * 70) 
             progress_callback(f"Analyzing chunk {index} of {total_chunks}...", int(base_progress))
             
         chunk_summaries.append(_summarize_chunk(client, chunk_text, index, total_chunks))
         
-        # CRITICAL RATE LIMIT FIX: Wait 60s between chunks (but not after the last one)
         if index < total_chunks:
             if progress_callback:
                 progress_callback(f"Cooling down API (protecting rate limits)...", int(base_progress + 5))
