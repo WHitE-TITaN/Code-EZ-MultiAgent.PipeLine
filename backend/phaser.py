@@ -1,84 +1,50 @@
-import json
 import re
 
-def parse_markdown_to_json(markdown_text):
+def extract_and_map_visualizations(markdown_text: str):
     """
-    Parses raw markdown text into slides AND harvests the raw Base64 image data.
+    Reads markdown, tracks the current heading (topic), 
+    extracts base64 images into a dictionary, and returns the clean text.
     """
-    slides = []
-    harvested_images = {} # THE HARVESTER DICTIONARY
+    visualizations_by_topic = {}
+    current_topic = "General Overview" # Default topic if no header is found first
     
-    current_slide = {
-        "title": "Introduction",
-        "content": [],
-        "raw_text": "",
-        "existing_chart": {} 
-    }
-    
+    cleaned_lines = []
     lines = markdown_text.split('\n')
     
-    for line in lines:
-        clean_line = line.strip()
-        
-        if not clean_line:
-            continue
-            
-        # 1. New Slide Trigger
-        if clean_line.startswith('# ') or clean_line.startswith('## '):
-            if current_slide["content"] or current_slide["title"] != "Introduction" or current_slide.get("existing_chart"):
-                slides.append(current_slide)
-                
-            title_text = clean_line.lstrip('#').strip()
-            current_slide = {
-                "title": title_text,
-                "content": [],
-                "raw_text": "",
-                "existing_chart": {}
-            }
-            
-        # 2. THE VISUALIZATION SEPARATOR LOGIC
-        elif clean_line.upper().startswith('[CHART:') or clean_line.upper().startswith('[VISUALIZATION:'):
-            topic = re.sub(r'\[(CHART|VISUALIZATION):\s*', '', clean_line, flags=re.IGNORECASE).rstrip(']')
-            current_slide["existing_chart"] = {
-                "has_existing_chart": True, 
-                "chart_topic_reference": topic
-            }
-            current_slide["raw_text"] += f"{clean_line}\n"
+    # Regex to capture the full base64 data string: (data:image/png;base64,...)
+    b64_pattern = re.compile(r"\(data:image\/[a-zA-Z0-9+.-]+;base64,[^\)]+\)")
 
-        # 3. HARVEST THE BASE64 IMAGES!
-        elif clean_line.startswith('!['):
-            # NEW REGEX: Grabs the Topic (group 1) AND the Base64 URL (group 2)
-            match = re.search(r'!\[(.*?)\]\((.*?)\)', clean_line)
-            if match:
-                topic = match.group(1).strip()
-                image_data = match.group(2).strip() # The massive Base64 string
-                
-                # Tell the slide it has a chart
-                current_slide["existing_chart"] = {
-                    "has_existing_chart": True, 
-                    "chart_topic_reference": topic
-                }
-                
-                # Save the massive string to our dictionary!
-                if topic not in harvested_images:
-                    harvested_images[topic] = []
-                harvested_images[topic].append(image_data)
-                
-            current_slide["raw_text"] += f"{clean_line}\n"
+    for line in lines:
+        # 1. Update the active topic if we hit a Markdown heading (#, ##, ###)
+        if line.strip().startswith('#'):
+            # Strip the hashes and spaces to get the clean topic name
+            current_topic = line.lstrip('#').strip()
             
-        # 4. Bullets
-        elif clean_line.startswith('- ') or clean_line.startswith('* '):
-            bullet_text = clean_line[2:].strip()
-            current_slide["content"].append({"type": "bullet", "text": bullet_text})
-            current_slide["raw_text"] += f"{clean_line}\n"
-            
-        # 5. Standard Paragraphs
-        else:
-            current_slide["content"].append({"type": "paragraph", "text": clean_line})
-            current_slide["raw_text"] += f"{clean_line}\n"
-            
-    if current_slide["content"] or current_slide.get("existing_chart"):
-        slides.append(current_slide)
+        # 2. Look for Base64 image data in the current line
+        matches = b64_pattern.findall(line)
         
-    # We now return a tuple containing BOTH the slides and the images!
-    return slides, harvested_images
+        if matches:
+            # Create the list for this topic if it doesn't exist
+            if current_topic not in visualizations_by_topic:
+                visualizations_by_topic[current_topic] = []
+                
+            # Store the extracted image data
+            visualizations_by_topic[current_topic].extend(matches)
+            
+            # 3. Strip the massive data from the line, but leave a breadcrumb for the AI
+            # This tells the summarizer "Hey, a chart used to be here!"
+            clean_line = b64_pattern.sub("[REFERENCE_CHART_EXTRACTED]", line)
+            clean_line = clean_line.replace("Visualization[]", "").replace("![]", "").strip()
+            
+            if clean_line:
+                cleaned_lines.append(clean_line)
+        else:
+            # If it's just an empty formatting tag left over, skip it
+            if "Visualization[]" in line.strip():
+                continue
+            cleaned_lines.append(line)
+
+    # Rejoin the text for the Summarizer AI
+    clean_markdown = "\n".join(cleaned_lines)
+    
+    return clean_markdown, visualizations_by_topic
