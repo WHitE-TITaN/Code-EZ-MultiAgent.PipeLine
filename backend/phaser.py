@@ -1,58 +1,50 @@
-import json
+import re
 
-
-def parse_markdown_to_json(markdown_text):
+def extract_and_map_visualizations(markdown_text: str):
     """
-    Parses raw markdown text into a structured list of slide dictionaries.
+    Reads markdown, tracks the current heading (topic), 
+    extracts base64 images into a dictionary, and returns the clean text.
     """
-    slides = []
-    current_slide = {
-        "title": "Introduction", # Default title if no heading is found first
-        "content": [],
-        "raw_text": ""
-    }
+    visualizations_by_topic = {}
+    current_topic = "General Overview" # Default topic if no header is found first
     
-    # Split the text into individual lines
+    cleaned_lines = []
     lines = markdown_text.split('\n')
     
+    # Regex to capture the full base64 data string: (data:image/png;base64,...)
+    b64_pattern = re.compile(r"\(data:image\/[a-zA-Z0-9+.-]+;base64,[^\)]+\)")
+
     for line in lines:
-        clean_line = line.strip()
-        
-        # Skip completely empty lines to keep data clean
-        if not clean_line:
-            continue
+        # 1. Update the active topic if we hit a Markdown heading (#, ##, ###)
+        if line.strip().startswith('#'):
+            # Strip the hashes and spaces to get the clean topic name
+            current_topic = line.lstrip('#').strip()
             
-        # Check if the line is a  Heading 1 or Heading 2 (New Slide trigger)
-        if clean_line.startswith('# ') or clean_line.startswith('## '):
-            # 1. Save the slide we were just working on (if it has data)
-            if current_slide["content"] or current_slide["title"] != "Introduction":
-                slides.append(current_slide)
+        # 2. Look for Base64 image data in the current line
+        matches = b64_pattern.findall(line)
+        
+        if matches:
+            # Create the list for this topic if it doesn't exist
+            if current_topic not in visualizations_by_topic:
+                visualizations_by_topic[current_topic] = []
                 
-            # 2. Start a brand new slide
-            # .lstrip('#').strip() removes the markdown hashes to get pure text
-            title_text = clean_line.lstrip('#').strip()
-            current_slide = {
-                "title": title_text,
-                "content": [],
-                "raw_text": ""
-            }
+            # Store the extracted image data
+            visualizations_by_topic[current_topic].extend(matches)
             
-        # Check if it's a bullet point
-        elif clean_line.startswith('- ') or clean_line.startswith('* '):
-            bullet_text = clean_line[2:].strip()
-            current_slide["content"].append({"type": "bullet", "text": bullet_text})
-            current_slide["raw_text"] += f"{clean_line}\n"
+            # 3. Strip the massive data from the line, but leave a breadcrumb for the AI
+            # This tells the summarizer "Hey, a chart used to be here!"
+            clean_line = b64_pattern.sub("[REFERENCE_CHART_EXTRACTED]", line)
+            clean_line = clean_line.replace("Visualization[]", "").replace("![]", "").strip()
             
-        # Otherwise, treat it as a normal paragraph of text
+            if clean_line:
+                cleaned_lines.append(clean_line)
         else:
-            current_slide["content"].append({"type": "paragraph", "text": clean_line})
-            current_slide["raw_text"] += f"{clean_line}\n"
-            
-    # Don't forget to append the very last slide when the loop finishes!
-    if current_slide["content"]:
-        slides.append(current_slide)
+            # If it's just an empty formatting tag left over, skip it
+            if "Visualization[]" in line.strip():
+                continue
+            cleaned_lines.append(line)
 
-
+    # Rejoin the text for the Summarizer AI
+    clean_markdown = "\n".join(cleaned_lines)
     
-        
-    return slides
+    return clean_markdown, visualizations_by_topic
