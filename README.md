@@ -1,3 +1,12 @@
+---
+title: AI Presentation Generator
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # Code-EZ MultiAgent Pipeline
 
 AI-powered Markdown-to-PowerPoint pipeline that turns long-form research documents into consulting-style presentation decks.
