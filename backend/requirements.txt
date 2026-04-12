@@ -4,6 +4,8 @@ python-multipart
 python-dotenv==1.0.0
 google-genai
 markdown2
-python-pptx
-requests
-Pillow
+
+google
+google.genai
+
+python-dotenv
