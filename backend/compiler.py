@@ -159,6 +159,7 @@ def build_powerpoint(master_blueprint_json: list, harvested_images: dict, output
 
         _render_layout(slide, layout_type, blocks, image_asset, bool(background_stream), theme, slide_data)
 
+    _add_thank_you_slide(prs)
     prs.save(output_filename)
     return output_filename
 
@@ -240,6 +241,66 @@ def _add_cover_slide(prs, deck_title):
         top=Inches(1.65),
         width=Inches(3.1),
         height=Inches(2.6),
+    )
+
+    return slide
+
+
+def _add_thank_you_slide(prs):
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    theme = THEMES["midnight"]
+
+    bg = slide.shapes.add_shape(
+        MSO_AUTO_SHAPE_TYPE.RECTANGLE,
+        Inches(0),
+        Inches(0),
+        Inches(SLIDE_WIDTH),
+        Inches(SLIDE_HEIGHT),
+    )
+    bg.fill.solid()
+    bg.fill.fore_color.rgb = RGBColor(244, 246, 255)
+    bg.line.fill.background()
+
+    _render_background_design(
+        slide,
+        [
+            {"type": "circle", "x": -0.9, "y": -0.9, "w": 4.0, "h": 4.0, "fill": "#CDD6FF", "transparency": 0.18},
+            {"type": "rounded_rect", "x": 1.0, "y": 1.4, "w": 11.0, "h": 4.7, "fill": "#E9ECFF", "transparency": 0.2},
+            {"type": "arc_band", "x": 9.5, "y": 4.8, "w": 4.0, "h": 2.8, "fill": "#6F79FF", "transparency": 0.18},
+        ],
+        theme,
+    )
+
+    accent = slide.shapes.add_shape(
+        MSO_AUTO_SHAPE_TYPE.ROUNDED_RECTANGLE,
+        Inches(5.22),
+        Inches(2.0),
+        Inches(2.9),
+        Inches(0.15),
+    )
+    accent.fill.solid()
+    accent.fill.fore_color.rgb = theme["accent"]
+    accent.line.fill.background()
+
+    title_box = slide.shapes.add_textbox(Inches(2.0), Inches(2.45), Inches(9.4), Inches(1.8))
+    tf = title_box.text_frame
+    tf.word_wrap = True
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    tf.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
+    p = tf.paragraphs[0]
+    p.text = "Thank You"
+    p.font.size = Pt(30)
+    p.font.bold = True
+    p.font.color.rgb = PALETTE["navy"]
+    p.alignment = PP_ALIGN.CENTER
+
+    _add_decorative_visual_panel(
+        slide,
+        theme,
+        left=Inches(4.95),
+        top=Inches(4.55),
+        width=Inches(3.1),
+        height=Inches(1.35),
     )
 
     return slide
