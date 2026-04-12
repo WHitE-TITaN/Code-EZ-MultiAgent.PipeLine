@@ -10,7 +10,7 @@ load_dotenv()
 
 CHUNK_CHAR_LIMIT = 300000 
 CHUNK_OVERLAP = 5000
-INTERMEDIATE_SLIDES_PER_CHUNK = 8
+INTERMEDIATE_SLIDES_PER_CHUNK = 10
 FINAL_SLIDE_LIMIT = 15
 
 def _get_client() -> genai.Client:
@@ -74,9 +74,31 @@ def _generate_json_response(client: genai.Client, prompt: str) -> str:
 
 def _summarize_chunk(client: genai.Client, chunk_text: str, chunk_index: int, total_chunks: int) -> List[dict]:
     prompt = f"""You are analyzing chunk {chunk_index} of {total_chunks} from a very large markdown document.
-Extract the most presentation-worthy insights.
-Return ONLY a valid JSON array. Each object must have "title", "bullets" (array of strings, min 40 & max 50 words).
-CRITICAL: If the text mentions a [CHART: Topic], [VISUALIZATION: Topic], or an image ![Topic](...), you MUST include an "existing_chart" object like this: {{"has_existing_chart": true, "chart_topic_reference": "Topic"}}.
+Your goal is to create content for premium PowerPoint slides, not document pages.
+
+CONTENT PRINCIPLES:
+- Make each slide insight-led, not text-dump-led.
+- Provide enough written substance so the slide can feel complete and persuasive.
+- Favor structured thinking, frameworks, comparisons, implications, and key takeaways.
+- When numbers exist, surface them explicitly so they can become visual callouts.
+- Avoid vague bullets and avoid repeating the same point with different wording.
+
+Return ONLY a valid JSON array.
+Each object must have:
+- "title": string
+- "summary": 1 meaningful sentence, usually 18 to 34 words, that captures the slide's core message
+- "bullets": array of 5 to 7 substantive bullet strings, each usually 12 to 26 words
+- "highlight_metrics": array of 1 to 5 short metric/value strings pulled from the source when available
+- "recommended_visual": one of "chart", "timeline", "framework", "comparison", "dashboard", "process", "map", "illustration"
+
+Optional:
+- "existing_chart": {{"has_existing_chart": true, "chart_topic_reference": "Topic"}}
+
+CRITICAL:
+If the text mentions a [CHART: Topic], [VISUALIZATION: Topic], [REFERENCE_CHART_EXTRACTED], or an image ![Topic](...), you MUST preserve that by including "existing_chart".
+If the source contains numbers, dates, growth rates, percentages, budgets, market sizes, milestones, or phase-based plans, you must surface them in bullets and highlight_metrics.
+Prefer slide-worthy content density over minimal summaries.
+
 Limit to {INTERMEDIATE_SLIDES_PER_CHUNK} slide objects.
 Markdown chunk:
 {chunk_text}"""
@@ -85,10 +107,29 @@ Markdown chunk:
 
 def _merge_chunk_summaries(client: genai.Client, chunk_summaries: List[List[dict]]) -> List[dict]:
     serialized_summaries = json.dumps(chunk_summaries, ensure_ascii=True)
-    prompt = f"""You are an expert presentation designer.
+    prompt = f"""You are an expert presentation strategist.
 Deduplicate and merge these slide candidates into a final presentation outline.
-Return ONLY a valid JSON array of objects with "title", "bullets" (array of strings).
-CRITICAL: Preserve the "existing_chart" data if it exists in the candidates!
+
+OUTPUT GOAL:
+- Build a presentation that feels rich, structured, and executive-ready.
+- Prefer slides with a clear key message, 4 to 6 strong supporting points, and surfaced metrics.
+- Keep the story flowing from high-level context to analysis, then implications and recommendations.
+
+Return ONLY a valid JSON array.
+Each object must contain:
+- "title"
+- "summary"
+- "bullets" (array of 5 to 7 strings)
+- "highlight_metrics" (array of 1 to 5 strings when available)
+- "recommended_visual" (one of "chart", "timeline", "framework", "comparison", "dashboard", "process", "map", "illustration")
+
+CRITICAL:
+- Preserve the "existing_chart" data if it exists in the candidates.
+- Do not collapse everything into overly short bullets.
+- Keep metrics explicit and presentation-ready.
+- Prefer richer slides with real analytical content over sparse summaries.
+- When the material includes steps, phases, or a roadmap, preserve that structure clearly.
+
 Maximum {FINAL_SLIDE_LIMIT} slides. Order from high-level to specific.
 Chunk slide candidates:
 {serialized_summaries}"""
