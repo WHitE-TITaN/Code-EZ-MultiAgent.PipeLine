@@ -32,7 +32,6 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // 1. Upload and get the Job ID Ticket
       const uploadRes = await fetch('http://localhost:7860/upload', {
         method: 'POST',
         body: formData,
@@ -45,10 +44,8 @@ export default function Home() {
       
       const jobId = uploadData.job_id;
 
-      // 2. Start polling the status endpoint
       let isComplete = false;
       while (!isComplete) {
-        // Wait 2 seconds between checks
         await new Promise((resolve) => setTimeout(resolve, 2000));
         
         const statusRes = await fetch(`http://localhost:7860/status/${jobId}`);
@@ -58,14 +55,17 @@ export default function Home() {
           throw new Error(statusData.message);
         }
 
-        // Update the UI with what the backend is currently doing
         setMessage(statusData.message);
         setProgress(statusData.progress);
 
         if (statusData.status === 'completed') {
           isComplete = true;
-          console.log("FINAL DATA:", statusData.data); // Your JSON is here!
-          setMessage('Success! Presentation generated (check console for data).');
+          setMessage('Success! Downloading your presentation...');
+          
+          // --- THIS IS THE RESTORED DOWNLOAD CODE ---
+          // Redirect the browser directly to the download endpoint
+          window.location.href = `http://localhost:7860/download/${jobId}`;
+          
           setFile(null);
           setLoading(false);
         }
