@@ -297,4 +297,4 @@ These examples are useful for:
 
 ## License
 
-This project appears to be a hackathon/prototype codebase.
+This project is a hackathon/prototype codebase.
