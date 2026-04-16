@@ -58,7 +58,7 @@ def _generate_json_response(client: genai.Client, prompt: str) -> str:
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model="gemini-3.1-flash-lite-preview",
+                model="gemini-3.1-flash-lite-preview",       # gemini-3.1-Flash-Lite-preview is also an option if available
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",

@@ -8,4 +8,5 @@ markdown2
 google
 google.genai
 
+python-pptx
 python-dotenv

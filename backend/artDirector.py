@@ -187,7 +187,7 @@ def design_slide_layouts(summarized_json_string: str, available_topics: list, pr
         progress_callback("Art Director is designing premium magazine layouts...", 75)
 
     response = client.models.generate_content(
-        model="gemini-3.1-flash-lite-preview", 
+        model="gemini-3-flash-preview", 
         contents=prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -196,3 +196,7 @@ def design_slide_layouts(summarized_json_string: str, available_topics: list, pr
     )
     
     return response.text
+
+
+
+

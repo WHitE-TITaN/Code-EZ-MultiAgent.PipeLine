@@ -1,3 +1,12 @@
+---
+title: AI Presentation Generator
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # Code-EZ MultiAgent Pipeline
 
 AI-powered Markdown-to-PowerPoint pipeline that turns long-form research documents into consulting-style presentation decks.
@@ -25,8 +34,8 @@ The project combines a `Next.js` upload UI with a `FastAPI` backend that runs a 
 flowchart LR
     U["User"] --> F["Frontend<br/>Next.js 16 + React 19"]
     F -->|POST /upload| B["FastAPI Backend"]
-    F -->|GET /status/{job_id}| B
-    F -->|GET /download/{job_id}| B
+    F -->|GET /status by job id| B
+    F -->|GET /download by job id| B
 
     B --> P["Pipeline Orchestrator<br/>backend/main.py"]
     P --> A1["Agent 1: Phaser<br/>Extract headings + base64 charts"]
@@ -288,4 +297,4 @@ These examples are useful for:
 
 ## License
 
-This project appears to be a hackathon/prototype codebase.
+This project is a hackathon/prototype codebase.

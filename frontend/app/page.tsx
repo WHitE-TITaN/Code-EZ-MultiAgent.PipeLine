@@ -31,8 +31,10 @@ export default function Home() {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      
 
-      const uploadRes = await fetch('http://localhost:7860/upload', {
+      {/* https://whitetitan-multiagent-pipeline.hf.space/upload */}
+      const uploadRes = await fetch('http://localhost:7860/upload', {  
         method: 'POST',
         body: formData,
       });
@@ -48,7 +50,8 @@ export default function Home() {
       while (!isComplete) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         
-        const statusRes = await fetch(`http://localhost:7860/status/${jobId}`);
+        const statusRes = await fetch(`http://localhost:7860/status/${jobId}`);  {/* https://whitetitan-multiagent-pipeline.hf.space/status/${jobId} */}
+          
         const statusData = await statusRes.json();
 
         if (statusData.status === 'error') {
@@ -64,7 +67,7 @@ export default function Home() {
           
           // --- THIS IS THE RESTORED DOWNLOAD CODE ---
           // Redirect the browser directly to the download endpoint
-          window.location.href = `http://localhost:7860/download/${jobId}`;
+          window.location.href = `http://localhost:7860/download/${jobId}`;  {/* https://whitetitan-multiagent-pipeline.hf.space/download/${jobId} */}
           
           setFile(null);
           setLoading(false);
