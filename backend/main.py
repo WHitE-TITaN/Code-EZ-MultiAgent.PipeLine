@@ -7,7 +7,7 @@ from fastapi import FastAPI, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse # ADDED THIS
 
-from backend.phaser import parse_markdown_to_json
+from backend.phaser import extract_and_map_visualizations
 from backend.storyDirector import generate_slide_content
 from backend.compiler import build_powerpoint # ADDED THIS (adjust import path if needed)
 from backend.artDirector import design_slide_layouts
@@ -36,8 +36,12 @@ def process_pipeline(job_id: str, markdown_text: str):
         update_progress("Parsing markdown structure...", 10)
         
         # CAUGHT! We unpack both the slides and the image dictionary here
-        slides_data, extracted_images = parse_markdown_to_json(markdown_text) 
+        slides_data, extracted_images = extract_and_map_visualizations(markdown_text) 
         
+        original_size = len(markdown_text)
+        summarized_size = len(slides_data)
+        print(f"📊 TEXT COMPRESSION: Original ({original_size} chars) -> Summarized ({summarized_size} chars)")
+
         update_progress("Generating presentation content...", 20)
         summarized_slides_string = generate_slide_content(slides_data, progress_callback=update_progress)
         
